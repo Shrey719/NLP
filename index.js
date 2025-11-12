@@ -7,27 +7,28 @@
  * Size/magnitude (big<->tiny) 
 */
 
-// currently there are SIX dimensions
-function normalize(n, dimensions=6) {
-    return n/Math.sqrt(dimensions)
-}
-
-class Point {
-
-}
+// i do realize one can just make a pytorch one and then run it itself... but thats BORING
+import {train} from "./train.js"
 
 class Graph {
-    constructor() {
+    constructor(dimensions=120) {
         this.map = new Map()
+        this.dimensions=dimensions
     }
-    set(value, con, ani, val, int, dyn, mag) {
-        this.map.set(value, [con, ani, val, int, dyn, mag])
+    set(value, ...cords) {
+        if (cords.length !== this.dimensions) {
+            console.error("Expected " + this.dimensions + " got "+cords.length)
+        }
+        this.map.set(value, cords)
     }
     // gets the coordinates of a word 
     get(value) {
         return this.map.get(value)
     }
 
+    normalize(n) {
+        return n/Math.sqrt(this.dimensions)
+    }
     distance(word1, word2) {
         word1 = this.map.get(word1)
         word2 = this.map.get(word2)
@@ -50,15 +51,46 @@ class Graph {
                 closest = other
             }
         }
-        return {word: closest, distance: minDist, normalized: normalize(minDist)}
+        return {word: closest, distance: minDist, normalized: this.normalize(minDist)}
 
     }
 
+    next(start, length, punctuation=[".", "!", "?"]) {
+        let sentance = [start]
+        let recent = [start]
+        let current = start
+
+        for (let i=0; i<length; i++) {
+            const skip = new Set(recent)
+
+            const nextObj = this.nearest(current, skip)
+            if (!nextObj) break
+
+            const nextWord = nextObj.word
+            sentance.push(nextWord)
+            current = nextWord
+
+            if(punctuation.includes(nextWord)) break
+        }
+        return sentance.join(" ");
+    }
 }
 
 let cube = new Graph()
 
-cube.set("dog", 0.9, 1.0, 0.6, 0.5, 0.7, 0.6)
-cube.set("rock", 1.0, 0.0, 0.5, 0.6, 0.01, 0.7)
 
-console.log(cube.nearest("dog"))
+let data = [
+    "she ate a chicken ?".split(" "),
+    "he jumped the fence?".split(" "),
+    "I ate a burger.".split(" "),
+    "I went outside.".split(" "),
+    "The chicken jumped quickly".split(" "),
+    "The chicken then jumped quickly".split(" "),
+    "one plus one is two".split(" "),
+    "one plus three is four".split(" "),
+    "a dog is a type of animal".split(" ")
+]
+
+train(cube, data, 2)
+
+console.log(cube.next("animal", 3))
