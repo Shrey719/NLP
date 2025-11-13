@@ -4,8 +4,8 @@ import data from "./data.js";
 class Graph {
   constructor(dimensions = 512) {
     this.map = new Map();
+    this.bigramMap = new Map();
     this.dimensions = dimensions;
-    this.trigrams = new Map();
   }
   set(value, ...cords) {
     if (cords.length !== this.dimensions) {

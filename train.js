@@ -14,20 +14,13 @@ function train(graph, sentences, epochs = 5) {
 
         const v1 = graph.get(w1);
         const v2 = graph.get(w2);
-
         for (let d = 0; d < graph.dimensions; d++) {
           const avg = (v1[d] + v2[d]) / 2;
           v1[d] = avg;
           v2[d] = avg;
         }
-
         graph.set(w1, ...v1);
         graph.set(w2, ...v2);
-
-        if (i < sentence.length - 2) {
-          const w3 = sentence[i + 2];
-          graph.addTrigram(w1, w2, w3);
-        }
       }
     }
   }
