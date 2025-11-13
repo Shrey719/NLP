@@ -1,17 +1,8 @@
-/** THE DIFFERENT AXIS'
- * Concreteness (concrete<->abstract)- "paper" would have a positive number, "good" would have a negative number
- * Animacy (inanimate<->alive) - "paper" would be negative, "dog" would be positive
- * Valence (emotionional positive<->negative) for example 'grotesque' would be negative, 'wonderous' would be positive
- * Intensity (strong<->weak) for example the word "uhm" would have zero intensity, the word "hello" would have a low positive intensity, and the word "Magnificient" would have high positive intensity
- * Dynamic (still<->dynamic) the word 'run' would have a positive dynamic, but the word 'rock' would have no dynamic
- * Size/magnitude (big<->tiny) 
-*/
-
-// i do realize one can just make a pytorch one and then run it itself... but thats BORING
 import {train} from "./train.js"
+import data from "./data.js"
 
 class Graph {
-    constructor(dimensions=120) {
+    constructor(dimensions=512) {
         this.map = new Map()
         this.dimensions=dimensions
     }
@@ -35,62 +26,49 @@ class Graph {
         return Math.sqrt(word1.reduce((sum, val, i) => sum + (val - word2[i]) ** 2, 0));
     }
 
-    nearest(word) {
-
-        let minDist = Infinity;
-
+    nearest(word, usedWords = new Set()) {
         const target = this.map.get(word)
-        if (!target) return null;
-        let closest = null;
+        if (!target) return [];
+
+        let distances = [];
 
         for (const [other, vec] of this.map.entries()) {
-            if (other === word) continue; // skip self
-            const dist = Math.sqrt(target.reduce((sum, val, i) => sum + (val - vec[i]) ** 2, 0))
-            if (dist  < minDist) {
-                minDist = dist
-                closest = other
-            }
+            if (other === word || usedWords.has(other)) continue; // skip self and used words
+            const dist = Math.sqrt(target.reduce((sum, val, i) => sum + (val - vec[i]) ** 2, 0)); // distance formula
+            distances.push({ word: other, distance: dist });
         }
-        return {word: closest, distance: minDist, normalized: this.normalize(minDist)}
 
+        distances.sort((a, b) => a.distance - b.distance);
+        return distances.slice(0, 3); // 3 closest
     }
 
-    next(start, length, punctuation=[".", "!", "?"]) {
-        let sentance = [start]
-        let recent = [start]
-        let current = start
 
-        for (let i=0; i<length; i++) {
-            const skip = new Set(recent)
+    sentance(start, length) {
+        let sentence = [start];
+        let recent = new Set([start]);
+        let current = start;
 
-            const nextObj = this.nearest(current, skip)
-            if (!nextObj) break
+        for (let i = 0; i < length; i++) {
+            const nextWords = this.nearest(current, recent);
+            if (nextWords.length === 0) break;
 
-            const nextWord = nextObj.word
-            sentance.push(nextWord)
-            current = nextWord
+            const nextWord = nextWords[0].word;// first word that hasnt been used yets
+            sentence.push(nextWord);
+            recent.add(nextWord);
+            // exit on punctuation
+            if (nextWord.includes(".") || nextWord.includes("?") || nextWord.includes("!")) {
+                return sentence.join(" ")
+            }
+            current = nextWord;
 
-            if(punctuation.includes(nextWord)) break
         }
-        return sentance.join(" ");
+
+        return sentence.join(" ");
     }
 }
 
 let cube = new Graph()
 
+train(cube, data, 1)
 
-let data = [
-    "she ate a chicken ?".split(" "),
-    "he jumped the fence?".split(" "),
-    "I ate a burger.".split(" "),
-    "I went outside.".split(" "),
-    "The chicken jumped quickly".split(" "),
-    "The chicken then jumped quickly".split(" "),
-    "one plus one is two".split(" "),
-    "one plus three is four".split(" "),
-    "a dog is a type of animal".split(" ")
-]
-
-train(cube, data, 2)
-
-console.log(cube.next("animal", 3))
+console.log(cube.sentance("I", 100))
