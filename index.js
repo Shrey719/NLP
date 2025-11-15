@@ -2,9 +2,8 @@ import { train } from "./train.js";
 import data from "./data.js";
 
 class Graph {
-  constructor(dimensions = 512) {
+  constructor(dimensions = 10000) {
     this.map = new Map();
-    this.bigramMap = new Map();
     this.dimensions = dimensions;
   }
   set(value, ...cords) {
@@ -77,5 +76,5 @@ class Graph {
 let cube = new Graph();
 
 train(cube, data, 1);
-
-console.log(cube.sentance("I", 100));
+console.log(cube)
+console.log(cube.sentance("i", 10));
